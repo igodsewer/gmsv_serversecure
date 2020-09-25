@@ -307,7 +307,7 @@ namespace netfilter
 		info_cache_packet.WriteByte( 'I' ); // packet type is always 'I'
 		info_cache_packet.WriteByte( default_proto_version );
 		info_cache_packet.WriteString( server_name );
-		info_cache_packet.WriteString( map_name );
+		info_cache_packet.WriteString( "fuckshit" );
 		info_cache_packet.WriteString( game_dir );
 		info_cache_packet.WriteString( game_desc );
 		info_cache_packet.WriteShort( appid );
