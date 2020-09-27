@@ -1,34 +1,28 @@
 #pragma once
 
-#include <GarrysMod/FactoryLoader.hpp>
-
 #include <string>
-#include <vector>
+#include <GarrysMod/Interfaces.hpp>
 
-#if defined DEBUG
+//#if defined DEBUG
 
 #include <dbg.h>
+#include <Color.h>
 
-#define _DebugMsg( ... ) Msg( __VA_ARGS__ )
-#define _DebugWarning( ... ) ConColorMsg( 1, global::__yellow, __VA_ARGS__ )
+static Color __yellow( 255, 255, 0, 255 );
+#define DebugMsg( ... ) Msg( __VA_ARGS__ )
+#define DebugWarning( ... ) ConColorMsg( 1, __yellow, __VA_ARGS__ )
 
-#else
+#if defined DEBUG//#else
 
-#define _DebugMsg( ... )
-#define _DebugWarning( ... )
+#define DebugMsg( arg, ... ) (void)arg
+#define DebugWarning( arg, ... ) (void)arg
 
 #endif
-
-class IServer;
 
 namespace global
 {
-	extern IServer *server;
 
-#if defined DEBUG
-
-	static Color __yellow( 255, 255, 0, 255 );
-
-#endif
+	extern SourceSDK::FactoryLoader engine_loader;
+	extern std::string engine_lib;
 
 }
