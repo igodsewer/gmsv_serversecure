@@ -1,29 +1,65 @@
 #include <main.hpp>
 #include <netfilter.hpp>
 #include <GarrysMod/Lua/Interface.h>
-
-#if defined __APPLE__
-
-#include <AvailabilityMacros.h>
-
-#if MAC_OS_X_VERSION_MIN_REQUIRED > 1050
-
-#error The only supported compilation platform for this project on Mac OS X is GCC with Mac OS X 10.5 SDK (for ABI reasons).
-
-#endif
-
-#endif
+#include <scanning/symbolfinder.hpp>
+#include <iserver.h>
+#include <Platform.hpp>
 
 namespace global
 {
 
-	SourceSDK::FactoryLoader engine_loader( "engine", false, true, "bin/" );
-	std::string engine_lib = Helpers::GetBinaryFileName( "engine", false, true, "bin/" );
+	#if defined SYSTEM_WINDOWS
+
+	static const char IServer_sig[] =
+		"\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xD8\x6D\x24\x83\x4D\xEC\x10";
+	static const size_t IServer_siglen = sizeof( IServer_sig ) - 1;
+
+#elif defined SYSTEM_POSIX
+
+	static const char IServer_sig[] = "@sv";
+	static const size_t IServer_siglen = 0;
+
+#endif
+
+	SourceSDK::FactoryLoader engine_loader( "engine" );
+	IServer *server = nullptr;
+
+	LUA_FUNCTION_STATIC( GetClientCount )
+	{
+		LUA->PushNumber( server->GetClientCount( ) );
+		return 1;
+}
 
 	static void PreInitialize( GarrysMod::Lua::ILuaBase *LUA )
 	{
-		if( !engine_loader.IsValid( ) )
-			LUA->ThrowError( "unable to get engine factory" );
+		{
+			SymbolFinder symfinder;
+
+			void *temp_server = symfinder.Resolve(
+				engine_loader.GetModuleLoader( ).GetModule( ),
+				IServer_sig,
+				IServer_siglen
+			);
+			if( temp_server == nullptr )
+				LUA->ThrowError( "failed to locate IServer" );
+
+			server =
+
+#if defined SYSTEM_POSIX
+
+				reinterpret_cast<IServer *>
+
+#else
+
+				*reinterpret_cast<IServer **>
+
+#endif
+
+				( temp_server );
+		}
+
+		if( server == nullptr )
+LUA->ThrowError( "failed to dereference IServer" );
 
 		LUA->CreateTable( );
 
