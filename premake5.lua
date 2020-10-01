@@ -17,6 +17,7 @@ CreateWorkspace({name = "serversecure.core", abi_compatible = true})
 		IncludeSDKTier1()
 		IncludeSteamAPI()
 		IncludeDetouring()
+		IncludeScanning()
 		files({
 			"source/netfilter/*.cpp",
 			"source/netfilter/*.hpp"
