@@ -90,7 +90,7 @@ namespace netfilter
 
 	struct reply_info_t
 	{
-	
+
 		bool dontsend;
 		std::string game_name;
 		std::string map_name;
@@ -133,6 +133,7 @@ namespace netfilter
 		PacketTypeInvalid = -1,
 		PacketTypeGood,
 		PacketTypeInfo,
+		PacketTypeMasterserver,
 		PacketTypePlayer
 	};
 
@@ -317,7 +318,7 @@ static IFileSystem *filesystem = nullptr;
 		reply_info.amt_clients = global::server->GetNumClients();
 		reply_info.amt_bots = global::server->GetNumFakeClients();
 		reply_info.passworded = global::server->GetPassword() != nullptr ? 1 : 0;
-		
+
 		ISteamGameServer *steamGS = gameserver_context != nullptr ?
 			gameserver_context->m_pSteamGameServer : nullptr;
 		reply_info.secure = steamGS != nullptr ? steamGS->BSecure() : false;
@@ -355,7 +356,7 @@ static IFileSystem *filesystem = nullptr;
 		// if vac protected, it activates itself some time after startup
 		info_cache_packet.WriteByte(info.secure);
 		info_cache_packet.WriteString(info.game_version.c_str());
-		
+
 		bool notags = info.tags.empty();
 		// 0x80 - port number is present
 		// 0x10 - server steamid is present
@@ -624,7 +625,7 @@ static IFileSystem *filesystem = nullptr;
 
 		if (lua->PCall(3, 1, 0) != 0)
 			lua->ErrorNoHalt("\n[%s] %s\n\n", hook, lua->GetString(-1));
-		
+
 		if (lua->IsType(-1, GarrysMod::Lua::Type::BOOL))
 		{
 			if (!lua->GetBool(-1))
@@ -639,7 +640,7 @@ static IFileSystem *filesystem = nullptr;
 
 			int count = lua->ObjLen(-1);
 			newreply.count = count;
-			
+
 			std::vector<player_t> newPlayers(count);
 
 			for (int i = 0; i < count; i++)
@@ -660,7 +661,7 @@ static IFileSystem *filesystem = nullptr;
 
 				lua->GetField(-1, "time");
 				newPlayer.time = lua->GetNumber(-1);
-				lua->Pop(1);				
+				lua->Pop(1);
 
 				lua->Pop(1);
 				newPlayers.at(i) = newPlayer;
@@ -673,7 +674,7 @@ static IFileSystem *filesystem = nullptr;
 
 		return newreply;
 }
-	
+
 
 	static PacketType HandlePlayerQuery(const sockaddr_in &from)
 	{
@@ -732,13 +733,18 @@ static IFileSystem *filesystem = nullptr;
 		int challenge = *(data+5);
 
 		if (challenge == -1) return PacketTypeGood;
-		
+
 		uint8_t type = *( data + 4 );
-		
+
 		if (type == 'T')
 			return PacketTypeInfo;
 		if (type == 'U')
 			return PacketTypePlayer;
+		if (type == 's')
+		{
+			DebugWarning( "[Query] Got masterserver query! yaay\n" );
+			return PacketTypeMasterserver;
+		}
 		if (type == 'W')
 			return PacketTypeGood;// default challenge response
 
@@ -862,7 +868,7 @@ static IFileSystem *filesystem = nullptr;
 				IFileSystem **filesystem_ptr =
 					reinterpret_cast<IFileSystem **>( symfinder.Resolve(
 						dedicated_loader.GetModule( ),
-						g_pFullFileSystem_sym, 
+						g_pFullFileSystem_sym,
 						g_pFullFileSystem_symlen
 					) );
 				if( filesystem_ptr == nullptr )
@@ -913,7 +919,7 @@ static IFileSystem *filesystem = nullptr;
 
 			if( gameserver_context == nullptr )
 				LUA->ThrowError( "Failed to load required CSteamGameServerAPIContext interface." );
- 
+
 void *temp_net_sockets = symfinder.Resolve(
 				global::engine_loader.GetModuleLoader( ).GetModule( ),
 				net_sockets_sig,
